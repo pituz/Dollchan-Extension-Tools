@@ -19,7 +19,7 @@
 
 // Copyright (c) 2014 Dollchan Extension Tools Team. See the LICENSE file for license rights and limitations (MIT).
 
-(function de_main_func(scriptStorage) {
+(function de_main_func() {
 'use strict';
 
 var version = '14.10.9.0',
@@ -660,7 +660,7 @@ function $txtInsert(el, txt) {
 }
 
 function $txtSelect() {
-	return (nav.Presto ? doc.getSelection() : window.getSelection()).toString();
+	return window.getSelection().toString();
 }
 
 function $isEmpty(obj) {
@@ -939,8 +939,6 @@ function getStored(id, Fn) {
 				});
 			}
 		});
-	} else if (nav.isScriptStorage) {
-		Fn(scriptStorage.getItem(id));
 	} else {
 		Fn(locStorage.getItem(id));
 	}
@@ -959,8 +957,6 @@ function setStored(id, value) {
 			chrome.storage.local.set(obj, emptyFn);
 			chrome.storage.sync.remove(id, emptyFn);
 		}
-	} else if (nav.isScriptStorage) {
-		scriptStorage.setItem(id, value);
 	} else {
 		locStorage.setItem(id, value);
 	}
@@ -971,8 +967,6 @@ function delStored(id) {
 		GM_deleteValue(id);
 	} else if (nav.isChromeStorage) {
 		chrome.storage.sync.remove(id, emptyFn);
-	} else if (nav.isScriptStorage) {
-		scriptStorage.removeItem(id);
 	} else {
 		locStorage.removeItem(id);
 	}
@@ -1036,7 +1030,7 @@ function readCfg(Fn) {
 		if (!Cfg.timePattern) {
 			Cfg.timePattern = aib.timePattern;
 		}
-		if ((nav.Opera11 || aib.fch || aib.tiny) && Cfg.ajaxReply === 2) {
+		if ((aib.fch || aib.tiny) && Cfg.ajaxReply === 2) {
 			Cfg.ajaxReply = 1;
 		}
 		if (aib.tiny) {
@@ -1044,19 +1038,6 @@ function readCfg(Fn) {
 		}
 		if (!('Notification' in window)) {
 			Cfg.desktNotif = 0;
-		}
-		if (nav.Presto) {
-			if (nav.Opera11) {
-				if (!nav.isGM) {
-					Cfg.YTubeTitles = 0;
-				}
-			}
-			if (Cfg.YTubeType === 2) {
-				Cfg.YTubeType = 1;
-			}
-			Cfg.preLoadImgs = 0;
-			Cfg.findImgFile = 0;
-			Cfg.fileThumb = 0;
 		}
 		if (Cfg.updThrDelay < 10) {
 			Cfg.updThrDelay = 10;
@@ -1335,7 +1316,7 @@ function addPanel() {
 					(imgLen === 0 ? '' :
 						pButton('expimg', '#', false) +
 						pButton('maskimg', '#', true) +
-						(nav.Presto || localRun ? '' : 
+						(localRun ? '' : 
 							(Cfg.preLoadImgs ? '' : pButton('preimg', '#', false)) +
 							(!TNum && !aib.arch ? '' : pButton('savethr', '#', false)))) +
 					(!TNum || localRun ? '' :
@@ -2154,10 +2135,10 @@ function getCfgImages() {
 				$txt(Lng.cfg.webmVolume[lang])
 			])
 		]),
-		$if(!nav.Presto, lBox('preLoadImgs', true, null)),
-		$if(!nav.Presto, $New('div', {'class': 'de-cfg-depend'}, [
+		lBox('preLoadImgs', true, null),
+		$New('div', {'class': 'de-cfg-depend'}, [
 			lBox('findImgFile', true, null)
-		])),
+		]),
 		lBox('openImgs', true, null),
 		$New('div', {'class': 'de-cfg-depend'}, [ lBox('openGIFs', false, null)]),
 		lBox('imgSrcBtns', true, null)
@@ -2198,7 +2179,7 @@ function getCfgLinks() {
 				$txt(' '),
 				lBox('YTubeHD', false, null)
 			]),
-			$if(!nav.Opera11 || nav.isGM, lBox('YTubeTitles', false, null)),
+			$if(nav.isGM, lBox('YTubeTitles', false, null)),
 			lBox('addVimeo', true, null)
 		])
 	]);
@@ -2208,12 +2189,12 @@ function getCfgForm() {
 	return $New('div', {'class': 'de-cfg-unvis', 'id': 'de-cfg-form'}, [
 		optSel('ajaxReply', true, null),
 		$if(pr.form, $New('div', {'class': 'de-cfg-depend'}, [
-			$if(!nav.Opera11, $New('div', null, [
+			$New('div', null, [
 				lBox('postSameImg', true, null),
 				lBox('removeEXIF', false, null),
 				lBox('removeFName', false, null),
 				lBox('sendErrNotif', true, null)
-			])),
+			]),
 			lBox('scrAfterRep', true, null)
 		])),
 		$if(pr.form, optSel('addPostForm', true, function() {
@@ -2223,7 +2204,7 @@ function getCfgForm() {
 		})),
 		lBox('favOnReply', true, null),
 		$if(pr.subj, lBox('warnSubjTrip', false, null)),
-		$if(pr.file && !nav.Presto, lBox('fileThumb', true, function () {
+		$if(pr.file, lBox('fileThumb', true, function () {
 			for (var inp = pr.fileObj; true; inp = inp.next) {
 				inp.updateUtils();
 				if (!inp.next) {
@@ -6461,7 +6442,7 @@ FileInput.prototype = {
 				this.next._wrap.style.display = '';
 			}
 		}
-		if (aib.fch || nav.Presto || !/^image\/(?:png|jpeg)$/.test(this.el.files[0].type)) {
+		if (aib.fch || !/^image\/(?:png|jpeg)$/.test(this.el.files[0].type)) {
 			return;
 		}
 		if (this._rjUtil) {
@@ -7130,7 +7111,7 @@ AttachmentViewer.prototype = {
 				curY = e.clientY,
 				oldW = this._curW,
 				oldH = this._curH,
-				d = nav.Firefox ? -e.detail : nav.Presto ? e.wheelDelta : e.wheelDeltaY,
+				d = nav.Firefox ? -e.detail :  e.wheelDeltaY,
 				width = d > 0 ? oldW * this._zoomFactor : oldW / this._zoomFactor,
 				height = d > 0 ? oldH * this._zoomFactor : oldH / this._zoomFactor;
 			if (d < 0) {
@@ -8411,7 +8392,7 @@ Post.prototype = {
 			str += '<span info="spell-' + name + '" class="de-menu-item">' +
 				Lng.selHiderMenu[name][lang] + '</span>';
 		};
-		sel = nav.Presto ? doc.getSelection() : window.getSelection();
+		sel = window.getSelection();
 		if (ssel = sel.toString()) {
 			this._selText = ssel;
 			this._selRange = sel.getRangeAt(0);
@@ -9489,15 +9470,12 @@ function getNavFuncs() {
 	}
 	var ua = window.navigator.userAgent,
 		firefox = ua.contains('Gecko/'),
-		presto = window.opera ? +window.opera.version() : 0,
-		opera11 = presto ? presto < 12.1 : false,
 		webkit = ua.contains('WebKit/'),
 		chrome = webkit && ua.contains('Chrome/'),
 		safari = webkit && !chrome,
 		isGM = typeof GM_setValue === 'function' && 
 			(!chrome || !GM_setValue.toString().contains('not supported')),
 		isChromeStorage = window.chrome && !!window.chrome.storage,
-		isScriptStorage = !!scriptStorage && !ua.contains('Opera Mobi'),
 		scriptInstall =
 			firefox ? (typeof Components !== 'undefined' && !!Components.interfaces.nsIFile ?
 				'Greasemonkey' : 'Scriptish') :
@@ -9511,17 +9489,14 @@ function getNavFuncs() {
 			return navigator.userAgent + (this.Firefox ? ' [' + navigator.buildID + ']' : '');
 		},
 		Firefox: firefox,
-		Opera11: opera11,
-		Presto: presto,
 		WebKit: webkit,
 		Chrome: chrome,
 		Safari: safari,
 		isGM: isGM,
 		isChromeStorage: isChromeStorage,
-		isScriptStorage: isScriptStorage,
-		isGlobal: isGM || isChromeStorage || isScriptStorage,
+		isGlobal: isGM || isChromeStorage,
 		scriptInstall: scriptInstall,
-		cssFix: webkit ? '-webkit-' : opera11 ? '-o-' : '',
+		cssFix: webkit ? '-webkit-' : '',
 		fixLink: safari ? getAbsLink : function fixLink(url) {
 			return url;
 		},
@@ -10392,7 +10367,7 @@ function getImageBoard(checkDomains, checkOther) {
 // ===========================================================================================================
 
 function Initialization(checkDomains) {
-	if (/^(?:about|chrome|opera|res)/i.test(window.location)) {
+	if (/^(?:about|chrome|res)/i.test(window.location)) {
 		return false;
 	}
 	try {
@@ -11208,12 +11183,12 @@ function scriptCSS() {
 		.de-alert-btn { display: inline-block; vertical-align: top; color: green; cursor: pointer; }\
 		.de-alert-btn:not(.de-wait) + div { margin-top: .15em; }\
 		.de-alert-msg { display: inline-block; }\
-		.de-content textarea { display: block; margin: 2px 0; font: 12px courier new; ' + (nav.Presto ? '' : 'resize: none !important; ') + '}\
+		.de-content textarea { display: block; margin: 2px 0; font: 12px courier new; resize: none !important; }\
 		.de-content-block > a { color: inherit; font-weight: bold; font-size: 14px; }\
 		.de-content-block > input { margin: 0 4px; }\
 		#de-content-fav, #de-content-hid, #de-content-vid { font-size: 16px; padding: 10px; border: 1px solid gray; border-radius: 8px; }\
 		.de-editor { display: block; font: 12px courier new; width: 619px; height: 337px; tab-size: 4; -moz-tab-size: 4; -o-tab-size: 4; }\
-		.de-entry { display: block !important; float: none !important; width: auto; max-width: 100% !important; margin: 2px 0 !important; padding: 0 !important; border: none; font-size: 14px; ' + (nav.Presto ? 'white-space: nowrap; ' : '') + '}\
+		.de-entry { display: block !important; float: none !important; width: auto; max-width: 100% !important; margin: 2px 0 !important; padding: 0 !important; border: none; font-size: 14px; }\
 		.de-entry > a { text-decoration: none; border: none; }\
 		.de-entry > input { margin: 2px 4px; }\
 		.de-fav-inf-posts { float: right; margin-right: 4px; font: bold 14px serif; cursor: default; }\
@@ -11240,7 +11215,7 @@ function scriptCSS() {
 	x += '.de-menu { padding: 0 !important; margin: 0 !important; width: auto; min-width: 0; z-index: 9999; border: 1px solid grey !important;}\
 		.de-menu-item { display: block; padding: 3px 10px; color: inherit; text-decoration: none; font: 13px arial; white-space: nowrap; cursor: pointer; }\
 		.de-menu-item:hover { background-color: #222; color: #fff; }\
-		.de-new-post { ' + (nav.Presto ? 'border-left: 4px solid blue; border-right: 4px solid blue; }' : 'box-shadow: 6px 0 2px -2px blue, -6px 0 2px -2px blue; }') + '\
+		.de-new-post { box-shadow: 6px 0 2px -2px blue, -6px 0 2px -2px blue; }\
 		.de-omitted { color: grey; font-style: italic; }\
 		.de-omitted:before { content: "' + Lng.postsOmitted[lang] + '"; }\
 		.de-opref::after { content: " [OP]"; }\
@@ -11264,7 +11239,7 @@ function scriptCSS() {
 		.de-reflink { text-decoration: none; }\
 		.de-refcomma:last-child { display: none; }\
 		#de-sagebtn { margin-right: 7px; cursor: pointer; }\
-		.de-selected, .de-error-key { ' + (nav.Presto ? 'border-left: 4px solid red; border-right: 4px solid red; }' : 'box-shadow: 6px 0 2px -2px red, -6px 0 2px -2px red; }') + '\
+		.de-selected, .de-error-key { box-shadow: 6px 0 2px -2px red, -6px 0 2px -2px red; }\
 		#de-txt-resizer { display: inline-block !important; float: none !important; padding: 6px; margin: -2px -12px; vertical-align: bottom; border-bottom: 2px solid #555; border-right: 2px solid #444; cursor: se-resize; }\
 		#de-updater-btn:after { content: "' + Lng.getNewPosts[lang] + '" }\
 		#de-updater-div { clear: left; margin-top: 10px; }\
@@ -11275,9 +11250,7 @@ function scriptCSS() {
 
 	if (!nav.Firefox) {
 		x = x.replace(/(transition|keyframes|transform|animation|linear-gradient)/g, nav.cssFix + '$1');
-		if (!nav.Presto) {
-			x = x.replace(/\(to bottom/g, '(top').replace(/\(to top/g, '(bottom');
-		}
+                x = x.replace(/\(to bottom/g, '(top').replace(/\(to top/g, '(bottom');
 	}
 
 	applyCSS(x);
@@ -11441,4 +11414,4 @@ if (doc.readyState === 'interactive' || doc.readyState === 'complete') {
 	doc.addEventListener('DOMContentLoaded', initScript.bind(null, false), false);
 }
 
-})(window.opera && window.opera.scriptStorage);
+})();
