@@ -6085,13 +6085,6 @@ PostForm.prototype = {
 			if (spells.haveOutreps) {
 				val = spells.outReplace(val);
 			}
-			if (this.tNum && pByNum[this.tNum].subj === 'Dollchan Extension Tools') {
-				temp = '\n\n' + this._wrapText(aib.formButtons.bb[5], aib.formButtons.tag[5],
-					'-'.repeat(50) + '\n' + nav.ua + '\nv' + version + ' [' + nav.scriptInstall + ']')[1];
-				if (!val.contains(temp)) {
-					val += temp;
-				}
-			}
 			this.txta.value = val;
 			if (Cfg.ajaxReply) {
 				$alert(Lng.checking[lang], 'upload', true);
