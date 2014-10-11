@@ -9164,7 +9164,6 @@ function Thread(el, prev) {
 	el.removeAttribute('id');
 	el.setAttribute('de-thread', null);
 	visPosts = Math.max(visPosts, len);
-	aib.crimea && aib.crimea(this.op, el);
 	this.el = el;
 	this.prev = prev;
 	if (prev) {
@@ -10079,10 +10078,6 @@ function getImageBoard(checkDomains, checkOther) {
 			getWrap: { value: function (el) {
 				return el.parentNode;
 			} },
-			crimea: { value: function (op, el) {
-				brd === 'b' && (this.crimeaReg.test(op.text) || this.crimeaReg.test(op.subj)) && $del(el);
-			} },
-			crimeaReg: { value: /[^а-я]\u043A\u0440\u044B\u043C|\u043D\u043E\u0432\u043E\u0440\u043E\u0441|[\u043B\u0434]\u043D\u0440/i },
 			cssEn: { value: '.ABU-refmap, .box[onclick="ToggleSage()"], header > hr, img[alt="webm file"], label[for="name"], .media-expand-button, .norm-reply, .passcode-banner > hr, .postform-hr, .postpanel > :not(img), .posts > hr, .reflink:before, .thread-nav { display: none !important; }\
 				.captcha-image > img { cursor: pointer; }\
 				.de-abtn { transition: none; }\
