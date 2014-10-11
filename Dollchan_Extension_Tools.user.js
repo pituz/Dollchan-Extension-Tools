@@ -1297,7 +1297,7 @@ function addPanel() {
 	var panel, evtObject, imgLen = $Q(aib.qThumbImages, dForm).length;
 	(pr && pr.pArea[0] || dForm).insertAdjacentHTML('beforebegin',
 		'<div id="de-main-" lang="' + getThemeLang() + '">' +
-			'<div id="de-panel">' +
+			'<div id="de-panel-">' +
 				'<span id="de-btn-logo" title="' + Lng.panelBtn.attach[lang] + '"></span>' +
 				'<ul id="de-panel-btns"' + (Cfg.expandPanel ? '>' : ' style="display: none">') +
 				(Cfg.disabled ? pButton('enable', '#', false) :
@@ -1335,7 +1335,7 @@ function addPanel() {
 		(Cfg.disabled ? '' : '<div id="de-alert"></div><hr style="clear: both;">') +
 		'</div>'
 	);
-	panel = $id('de-panel');
+	panel = $id('de-panel-');
 	evtObject = {
 		attach: false,
 		odelay: 0,
@@ -2803,7 +2803,7 @@ HotKeys.prototype = {
 				toggleContent('hid', false);
 				break;
 			case 8: // Open/close panel
-				$disp($id('de-panel').lastChild);
+				$disp($id('de-panel-').lastChild);
 				break;
 			case 9: // Mask/unmask images
 				toggleCfg('maskImgs');
@@ -10406,7 +10406,7 @@ function Initialization(checkDomains) {
 		return false;
 	}
 	dForm = $q(aib.qDForm + ', form[de-form]', doc);
-	if (!dForm || $id('de-panel')) {
+	if (!dForm || $id('de-panel-')) {
 		return false;
 	}
 	nav = getNavFuncs();
@@ -10998,9 +10998,9 @@ function scriptCSS() {
 		.de-block { display: block; }\
 		#de-content-cfg > div { float: left; border-radius: 10px 10px 0 0; width: auto; min-width: 0; padding: 0; margin: 5px 20px; }\
 		.de-cfg-head { padding: 3px; border-radius: 10px 10px 0 0; color: #fff; text-align: center; font: bold 14px arial; cursor: default; }\
-		.de-cfg-head:lang(en), #de-panel:lang(en) { background: linear-gradient(to bottom, #4b90df, #3d77be 5px, #376cb0 7px, #295591 13px, rgba(0,0,0,0) 13px), linear-gradient(to bottom, rgba(0,0,0,0) 12px, #183d77 13px, #1f4485 18px, #264c90 20px, #325f9e 25px); }\
-		.de-cfg-head:lang(fr), #de-panel:lang(fr) { background: linear-gradient(to bottom, #7b849b, #616b86 2px, #3a414f 13px, rgba(0,0,0,0) 13px), linear-gradient(to bottom, rgba(0,0,0,0) 12px, #121212 13px, #1f2740 25px); }\
-		.de-cfg-head:lang(de), #de-panel:lang(de) { background: #777; }\
+		.de-cfg-head:lang(en), #de-panel-:lang(en) { background: linear-gradient(to bottom, #4b90df, #3d77be 5px, #376cb0 7px, #295591 13px, rgba(0,0,0,0) 13px), linear-gradient(to bottom, rgba(0,0,0,0) 12px, #183d77 13px, #1f4485 18px, #264c90 20px, #325f9e 25px); }\
+		.de-cfg-head:lang(fr), #de-panel-:lang(fr) { background: linear-gradient(to bottom, #7b849b, #616b86 2px, #3a414f 13px, rgba(0,0,0,0) 13px), linear-gradient(to bottom, rgba(0,0,0,0) 12px, #121212 13px, #1f2740 25px); }\
+		.de-cfg-head:lang(de), #de-panel-:lang(de) { background: #777; }\
 		.de-cfg-body { min-height: 304px; min-width: 357px; padding: 11px 7px 7px; margin-top: -1px; font: 13px sans-serif !important;}\
 		.de-cfg-body input, .de-cfg-body label, .de-cfg-body select { width: auto; padding: 0 !important; margin: 1px 2px !important; }\
 		.de-cfg-body input[type="button"], .de-cfg-body input[type="text"] { padding: 1px 2px !important; }\
@@ -11034,7 +11034,7 @@ function scriptCSS() {
 
 	// Main panel
 	x += '#de-btn-logo { margin-right: 3px; cursor: pointer; }\
-		#de-panel { height: 25px; z-index: 9999; border-radius: 15px 0 0 0; cursor: default;}\
+		#de-panel- { height: 25px; z-index: 9999; border-radius: 15px 0 0 0; cursor: default;}\
 		#de-panel-btns { display: inline-block; padding: 0 0 0 2px; margin: 0; height: 25px; border-left: 1px solid #8fbbed; }\
 		#de-panel-btns:lang(de), #de-panel-info:lang(de) { border-color: #ccc; }\
 		#de-panel-btns:lang(fr), #de-panel-info:lang(fr) { border-color: #616b86; }\
@@ -11268,10 +11268,10 @@ function updateCSS() {
 	if (Cfg.attachPanel) {
 		x += '.de-content { position: fixed; right: 0; bottom: 25px; z-index: 9999; max-height: 92%; overflow-x: visible; overflow-y: auto; }\
 		#de-content-fav, #de-content-hid { overflow-y: scroll; }\
-		#de-panel { position: fixed; right: 0; bottom: 0; }'
+		#de-panel- { position: fixed; right: 0; bottom: 0; }'
 	} else {
 		x += '.de-content { clear: both; float: right; }\
-		#de-panel { float: right; clear: both; }'
+		#de-panel- { float: right; clear: both; }'
 	}
 	if (!Cfg.panelCounter) {
 		x += '#de-panel-info { display: none; }';
