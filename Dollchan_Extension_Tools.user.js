@@ -112,8 +112,6 @@ defaultCfg = {
 	'closePopups':      0,      // auto-close popups
 	'hotKeys':          1,      // enable hotkeys
 	'loadPages':        1,      //    number of pages that are loaded on F5
-	'updScript':        1,      // check for script's update
-	'scrUpdIntrv':      1,      //    check interval in days (every val+1 day)
 	'turnOff':          0,      // enable script only for this site
 	'textaWidth':       300,    // textarea size
 	'textaHeight':      115,
@@ -241,15 +239,7 @@ Lng = {
 		'rePageTitle':  ['Название треда в заголовке вкладки*', 'Thread title in page tab*'],
 		'animation':    ['CSS3 анимация в скрипте', 'CSS3 animation in script'],
 		'closePopups':  ['Автоматически закрывать уведомления', 'Close popups automatically'],
-		'updScript':    ['Автоматически проверять обновления скрипта', 'Check for script update automatically'],
 		'turnOff':      ['Включать скрипт только на этом сайте', 'Enable script only on this site'],
-		'scrUpdIntrv': {
-			sel:        [
-				['Каждый день', 'Каждые 2 дня', 'Каждую неделю', 'Каждые 2 недели', 'Каждый месяц'],
-				['Every day', 'Every 2 days', 'Every week', 'Every 2 week', 'Every month']
-			],
-			txt:        ['', '']
-		},
 
 		'language': {
 			sel:        [['Ru', 'En'], ['Ru', 'En']],
@@ -431,8 +421,6 @@ Lng = {
 	noGlobalCfg:    ['Глобальные настройки не найдены', 'Global config not found'],
 	postNotFound:   ['Пост не найден', 'Post not found'],
 	dontShow:       ['Скрыть: ', 'Hide: '],
-	checkNow:       ['Проверить сейчас', 'Check now'],
-	updAvail:       ['Доступно обновление!', 'Update available!'],
 	haveLatest:     ['У вас стоит самая последняя версия!', 'You have latest version!'],
 	storage:        ['Хранение: ', 'Storage: '],
 	thrViewed:      ['Тредов просмотрено: ', 'Threads viewed: '],
@@ -1071,13 +1059,7 @@ function readCfg(Fn) {
 			}
 			Cfg.preLoadImgs = 0;
 			Cfg.findImgFile = 0;
-			if (!nav.isGM) {
-				Cfg.updScript = 0;
-			}
 			Cfg.fileThumb = 0;
-		}
-		if (nav.isChromeStorage) {
-			Cfg.updScript = 0;
 		}
 		if (Cfg.updThrDelay < 10) {
 			Cfg.updThrDelay = 10;
@@ -1966,7 +1948,6 @@ function fixSettings() {
 		'input[info="postSameImg"]', 'input[info="removeEXIF"]', 'input[info="removeFName"]'
 	]);
 	toggleBox(Cfg.addTextBtns, ['input[info="txtBtnsLoc"]']);
-	toggleBox(Cfg.updScript, ['select[info="scrUpdIntrv"]']);
 	toggleBox(Cfg.hotKeys, ['input[info="loadPages"]']);
 }
 
@@ -2369,18 +2350,6 @@ function getCfgCommon() {
 			inpTxt('loadPages', 2, null),
 			$txt(Lng.cfg.loadPages[lang])
 		]),
-		$if(!nav.isChromeStorage && !nav.Presto || nav.isGM, $New('div', null, [
-			lBox('updScript', true, null),
-			$New('div', {'class': 'de-cfg-depend'}, [
-				optSel('scrUpdIntrv', false, null),
-				$btn(Lng.checkNow[lang], '', function () {
-					$alert(Lng.loading[lang], 'updavail', true);
-					checkForUpdates(true, function (html) {
-						$alert(html, 'updavail', false);
-					});
-				})
-			])
-		])),
 		lBox('turnOff', true, function () {
 			for (var dm in comCfg) {
 				if (dm !== aib.dm && dm !== 'global' && dm !== 'lastUpd') {
@@ -11126,11 +11095,6 @@ function initThreadUpdater(title, enableUpdate) {
 }
 
 function initPage() {
-	if (Cfg.updScript) {
-		checkForUpdates(false, function (html) {
-			$alert(html, 'updavail', false);
-		});
-	}
 	if (TNum) {
 		if (Cfg.rePageTitle) {
 			doc.title = '/' + brd + ' - ' + firstThr.op.title;
@@ -11146,64 +11110,6 @@ function initPage() {
 		setTimeout(window.scrollTo, 20, 0, 0);
 	}
 	updater = initThreadUpdater(doc.title, TNum && Cfg.ajaxUpdThr);
-}
-
-function checkForUpdates(isForce, Fn) {
-	var day, temp = Cfg.scrUpdIntrv;
-	if (!isForce) {
-		day = 2 * 1000 * 60 * 60 * 24;
-		switch (temp) {
-		case 0: temp = day; break;
-		case 1: temp = day * 2; break;
-		case 2: temp = day * 7; break;
-		case 3: temp = day * 14; break;
-		default: temp = day * 30;
-		}
-		if (Date.now() - +comCfg.lastUpd < temp) {
-			return;
-		}
-	}
-	GM_xmlhttpRequest({
-		'method': 'GET',
-		'url': 'https://raw.github.com/SthephanShinkufag/Dollchan-Extension-Tools/master/Dollchan_Extension_Tools.meta.js',
-		'headers': {'Content-Type': 'text/plain'},
-		'onreadystatechange': function (xhr) {
-			if (xhr.readyState !== 4) {
-				return;
-			}
-			if (xhr.status === 200) {
-				var dVer = xhr.responseText.match(/@version\s+([0-9.]+)/)[1].split('.'),
-					cVer = version.split('.'),
-					len = cVer.length > dVer.length ? cVer.length : dVer.length,
-					i = 0,
-					isUpd = false;
-				if (!dVer) {
-					if (isForce) {
-						Fn('<div style="color: red; font-weigth: bold;">' + Lng.noConnect[lang] + '</div>');
-					}
-					return;
-				}
-				saveComCfg('lastUpd', Date.now());
-				while (i < len) {
-					if ((+dVer[i] || 0) > (+cVer[i] || 0)) {
-						isUpd = true;
-						break;
-					} else if ((+dVer[i] || 0) < (+cVer[i] || 0)) {
-						break;
-					}
-					i++;
-				}
-				if (isUpd) {
-					Fn('<a style="color: blue; font-weight: bold;" href="https://raw.github.com/SthephanShinkufag/Dollchan-Extension-Tools/master/Dollchan_Extension_Tools.user.js">' +
-					Lng.updAvail[lang] + '</a>');
-				} else if (isForce) {
-					Fn(Lng.haveLatest[lang]);
-				}
-			} else if (isForce) {
-				Fn('<div style="color: red; font-weigth: bold;">' + Lng.noConnect[lang] + '</div>');
-			}
-		}
-	});
 }
 
 
