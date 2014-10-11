@@ -6,7 +6,7 @@
 // @copyright       (C)2084, Bender Bending Rodriguez
 // @description     Doing some profit for imageboards
 // @icon            https://raw.github.com/SthephanShinkufag/Dollchan-Extension-Tools/master/Icon.png
-// @updateURL       https://raw.github.com/SthephanShinkufag/Dollchan-Extension-Tools/master/Dollchan_Extension_Tools.meta.js
+// @updateURL       https://raw.githubusercontent.com/pituz/d-e-t/master/Dollchan_Extension_Tools.user.js
 // @run-at          document-start
 // @grant           GM_getValue
 // @grant           GM_setValue
