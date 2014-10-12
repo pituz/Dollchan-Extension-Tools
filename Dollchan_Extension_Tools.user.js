@@ -288,7 +288,7 @@ Lng = {
 		'upd-off':      ['Включить автообновление треда', 'Enable thread autoupdate'],
 		'audio-off':    ['Звуковое оповещение о новых постах', 'Sound notification about new posts'],
 		'catalog':      ['Каталог', 'Catalog'],
-		'counter':      ['Постов/картинок в треде', 'Posts/Images in thread'],
+		'counter':      ['Постов/картинок/удалённых постов в треде', 'Posts/Images/Deleted posts in thread'],
 		'savethr':      ['Сохранить на диск', 'Save to disk'],
 		'enable':       ['Включить/выключить скрипт', 'Turn on/off the script']
 	},
@@ -1303,7 +1303,7 @@ function addPanel() {
 					pButton('enable', '#', false) +
 					(!TNum && !aib.arch ? '' :
 						'<span id="de-panel-info" title="' + Lng.panelBtn.counter[lang] + '">' +
-						firstThr.pcount + '/' + imgLen + '</span>')
+						firstThr.pcount + '/' + imgLen + '/' + firstThr.dcount + '</span>')
 				) +
 				'</ul>' +
 			'</div><div class="de-content"></div>' +
@@ -8981,6 +8981,7 @@ function Thread(el, prev) {
 	this.num = num;
 	Thread.tNums.push(+num);
 	this.pcount = omt + len;
+        this.dcount = 0
 	pByNum[num] = lastPost = this.op = el.post = new Post(aib.getOp(el), this, num, 0, true,
 		prev ? prev.last : null);
 	for (i = 0; i < len; i++) {
@@ -9076,6 +9077,7 @@ Thread.prototype = {
 			tPost.count -= count;
 		}
 		this.pcount -= count;
+                this.dcount = count;
 		return post;
 	},
 	load: function (last, smartScroll, Fn) {
