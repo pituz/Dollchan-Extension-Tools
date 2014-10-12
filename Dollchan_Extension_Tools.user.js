@@ -930,11 +930,9 @@ function getStored(id, Fn) {
 	} else if (nav.isChromeStorage) {
 		chrome.storage.local.get(id, function (obj) {
 			if (Object.keys(obj).length) {
-				// console.log('Read local ' + id);
 				Fn(obj[id]);
 			} else {
 				chrome.storage.sync.get(id, function (obj) {
-					// console.log('Read sync ' + id);
 					Fn(obj[id]);
 				});
 			}
@@ -1014,12 +1012,7 @@ function readCfg(Fn) {
 		var obj;
 		comCfg = val;
 		if (!(aib.dm in comCfg) || $isEmpty(obj = comCfg[aib.dm])) {
-			if (nav.isChromeStorage && (obj = locStorage.getItem('DESU_Config'))) {
-				obj = JSON.parse(obj)[aib.dm];
-				locStorage.removeItem('DESU_Config');
-			} else {
-				obj = nav.isGlobal ? comCfg.global || {} : {};
-			}
+			obj = nav.isGlobal ? comCfg.global || {} : {};
 			obj.captchaLang = aib.ru ? 2 : 1;
 			obj.correctTime = 0;
 		}
@@ -1102,13 +1095,6 @@ function readUserPosts() {
 		bUVis = val;
 		getStoredObj('DESU_Threads_' + aib.dm, function (val) {
 			hThr = val;
-			if (nav.isChromeStorage && (val = locStorage.getItem('DESU_Posts_' + aib.dm))) {
-				bUVis = JSON.parse(val);
-				val = locStorage.getItem('DESU_Threads_' + aib.dm);
-				hThr = JSON.parse(val);
-				locStorage.removeItem('DESU_Posts_' + aib.dm);
-				locStorage.removeItem('DESU_Threads_' + aib.dm);
-			}
 			var uVis, vis, num, post, date = Date.now(),
 				update = false;
 			if (brd in bUVis) {
@@ -1204,25 +1190,14 @@ function saveHiddenThreads(updContent) {
 function readFavoritesPosts() {
 	getStoredObj('DESU_Favorites', function (fav) {
 		var thr, temp, num, update = false;
-		if (nav.isChromeStorage && (temp = locStorage.getItem('DESU_Favorites'))) {
-			temp = JSON.parse(temp);
-			locStorage.removeItem('DESU_Favorites');
-			if ($isEmpty(temp)) {
-				return;
-			}
-			temp = temp[aib.host];
-			fav[aib.host] = temp;
-			temp = temp[brd];
-		} else {
-			if (!(aib.host in fav)) {
-				return;
-			}
-			temp = fav[aib.host];
-			if (!(brd in temp)) {
-				return;
-			}
-			temp = temp[brd];
+		if (!(aib.host in fav)) {
+			return;
 		}
+		temp = fav[aib.host];
+		if (!(brd in temp)) {
+			return;
+		}
+		temp = temp[brd];
 		for (thr = firstThr; thr; thr = thr.next) {
 			if ((num = thr.num) in temp) {
 				thr.setFavBtn(true);
@@ -2311,14 +2286,14 @@ function getCfgCommon() {
 			inpTxt('loadPages', 2, null),
 			$txt(Lng.cfg.loadPages[lang])
 		]),
-		lBox('turnOff', true, function () {
+		$if(nav.isGlobal, lBox('turnOff', true, function () {
 			for (var dm in comCfg) {
 				if (dm !== aib.dm && dm !== 'global' && dm !== 'lastUpd') {
 					comCfg[dm].disabled = Cfg.turnOff;
 				}
 			}
 			setStored('DESU_Config', JSON.stringify(comCfg) || '');
-		})
+		}))
 	]);
 }
 
@@ -9475,12 +9450,7 @@ function getNavFuncs() {
 		safari = webkit && !chrome,
 		isGM = typeof GM_setValue === 'function' && 
 			(!chrome || !GM_setValue.toString().contains('not supported')),
-		isChromeStorage = window.chrome && !!window.chrome.storage,
-		scriptInstall =
-			firefox ? (typeof Components !== 'undefined' && !!Components.interfaces.nsIFile ?
-				'Greasemonkey' : 'Scriptish') :
-			isChromeStorage ? 'Chrome extension' :
-			isGM ? 'Monkey' : 'Native userscript';
+		isChromeStorage = window.chrome && !!window.chrome.storage;
 	if (!window.GM_xmlhttpRequest) {
 		window.GM_xmlhttpRequest = $xhr;
 	}
@@ -9495,7 +9465,10 @@ function getNavFuncs() {
 		isGM: isGM,
 		isChromeStorage: isChromeStorage,
 		isGlobal: isGM || isChromeStorage,
-		scriptInstall: scriptInstall,
+		scriptInstall: (firefox ? (typeof Components !== 'undefined' && !!Components.interfaces.nsIFile ?
+				'Greasemonkey' : 'Scriptish') :
+			isChromeStorage ? 'Chrome extension' :
+			isGM ? 'Monkey' : 'Native userscript'),
 		cssFix: webkit ? '-webkit-' : '',
 		fixLink: safari ? getAbsLink : function fixLink(url) {
 			return url;
