@@ -9175,7 +9175,7 @@ Thread.prototype = {
 		}
 		if (info[0] !== 0) {
 			$id('de-panel-info').firstChild.textContent = this.pcount + '/' +
-				$Q(aib.qThumbImages, dForm).length;
+				$Q(aib.qThumbImages, dForm).length + '/' + this.dcount;
 		}
 		return info[1];
 	},
