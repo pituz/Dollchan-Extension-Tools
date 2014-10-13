@@ -71,13 +71,6 @@ defaultCfg = {
 	'insertNum':        1,      // insert >>link on postnumber click
 	'addMP3':           1,      // embed mp3 links
 	'addImgs':          0,      // embed links to images
-	'addYouTube':       3,      // embed YouTube links [0=off, 1=onclick, 2=player, 3=preview+player, 4=only preview]
-	'YTubeType':        0,      //    player type [0=flash, 1=HTML5]
-	'YTubeWidth':       360,    //    player width
-	'YTubeHeigh':       270,    //    player height
-	'YTubeHD':          0,      //    hd video quality
-	'YTubeTitles':      0,      //    convert links to titles
-	'addVimeo':         1,      //    embed vimeo links
 	'ajaxReply':        2,      // posting with AJAX (0=no, 1=iframe, 2=HTML5)
 	'postSameImg':      1,      //    ability to post same images
 	'removeEXIF':       1,      //    remove EXIF data from JPEGs
@@ -179,22 +172,7 @@ Lng = {
 		'crossLinks':   ['Преобразовывать http:// в >>/b/ссылки*', 'Replace http:// with >>/b/links*'],
 		'insertNum':    ['Вставлять >>ссылку по клику на №поста*', 'Insert >>link on №postnumber click*'],
 		'addMP3':       ['Добавлять плеер к mp3 ссылкам* ', 'Add player to mp3 links* '],
-		'addVimeo':     ['Добавлять плеер к Vimeo ссылкам* ', 'Add player to Vimeo links* '],
 		'addImgs':      ['Загружать картинки к jpg, png, gif ссылкам*', 'Load images to jpg, png, gif links*'],
-		'addYouTube': {
-			sel:        [
-				['Ничего', 'Плеер по клику', 'Авто плеер', 'Превью+плеер', 'Только превью'],
-				['Nothing', 'On click player', 'Auto player', 'Preview+player', 'Only preview']
-			],
-			txt:        ['к YouTube-ссылкам* ', 'to YouTube-links* ']
-		},
-		'YTubeType': {
-			sel:        [['Flash', 'HTML5'], ['Flash', 'HTML5']],
-			txt:        ['', '']
-		},
-		'YTubeHD':      ['HD ', 'HD '],
-		'YTubeTitles':  ['Загружать названия к YouTube-ссылкам*', 'Load titles into YouTube-links*'],
-
 		'ajaxReply': {
 			sel:        [['Откл.', 'Iframe', 'HTML5'], ['Disable', 'Iframe', 'HTML5']],
 			txt:        ['AJAX отправка постов*', 'posting with AJAX*']
@@ -518,7 +496,7 @@ Lng = {
 doc = window.document, aProto = Array.prototype, locStorage, sesStorage,
 Cfg, comCfg, hThr, pByNum, sVis, bUVis, needScroll,
 aib, nav, brd, TNum, pageNum, updater, hKeys, firstThr, lastThr, visPosts = 2, dTime,
-YouTube, WebmParser, Logger,
+WebmParser, Logger,
 pr, dForm, dummy, spells,
 Images_ = {preloading: false, afterpreload: null, progressId: null, canvas: null},
 ajaxInterval, lang, quotetxt = '', liteMode, localRun, isExpImg, isPreImg, chromeCssUpd,
@@ -1279,7 +1257,6 @@ function addPanel() {
 					pButton('settings', '#', true) +
 					pButton('hidden', '#', true) +
 					pButton('favor', '#', true) +
-					(!Cfg.addYouTube ? '' : pButton('video', '#', false)) +
 					(aib.arch || localRun ? '' :
 						pButton('refresh', '#', false) +
 						(!TNum && (pageNum === aib.firstPage) ? '' :
@@ -1580,103 +1557,6 @@ function showContent(cont, id, name, remove, data) {
 		}));
 	}
 
-	if (name === 'vid') {
-		els = $C('de-video-link', dForm);
-		if (els.length) {
-			!$id('de-ytube-api') && doc.head.appendChild(
-				$new('script', {'id': 'de-ytube-api', 'src': aib.prot + '//www.youtube.com/player_api'}, null));
-			cont.insertAdjacentHTML('beforeend', '<div class="de-video-obj"></div><center>' +
-				'<a class="de-abtn" id="de-video-btn-prev" href="#" title="' + Lng.prevVideo[lang] +
-				'">&#x25C0;</a> <a class="de-abtn" id="de-video-btn-hide" href="#" title="' + Lng.hideLnkList[lang] +
-				'">&#x25B2;</a> <a class="de-abtn" id="de-video-btn-next" href="#" title="' + Lng.nextVideo[lang] +
-				'">&#x25B6;</a></center><div id="de-video-list"></div>');
-			post = {};
-			post.ytInfo = null;
-			post.ytObj = cont.firstChild;
-			post.msg = cont.lastChild;
-			post.el = cont;
-			post.ytObj.nextSibling.onclick = function (e) {
-				$pd(e);
-				var node;
-				switch (e.target.id) {
-				case 'de-video-btn-hide':
-					node = this.el.lastChild;
-					if (node.style.display === 'none') {
-						node.style.display = '';
-						e.target.textContent = '\u25B2';
-					} else {
-						node.style.display = 'none';
-						e.target.textContent = '\u25BC';
-					}
-					return;
-				case 'de-video-btn-prev':
-					node = this.ytLink.parentNode,
-					(node.previousSibling || node.parentNode.lastChild).firstChild.click();
-					break;
-				case 'de-video-btn-next':
-					node = this.ytLink.parentNode,
-					(node.nextSibling || node.parentNode.firstChild).firstChild.click();
-				}
-			}.bind(post);
-			post.msg.onclick = function (e) {
-				$pd(e);
-				var c = e.target.classList;
-				if (!c.contains('de-video-link')) {
-					return;
-				}
-				if (c.contains('de-current')) {
-					post.ytInfo = null;
-				}
-				new YouTube().clickLink(this, e.target, 2);
-				if (!c.contains('de-ytube')) {
-					return;
-				}
-				this.ytObj.firstChild.id = 'de-ytplayer';
-				$script(
-					'if ("YT" in window && "Player" in window.YT) {\
-						initPlayer();\
-					}\
-					function onYouTubePlayerAPIReady() {\
-						initPlayer();\
-					}\
-					function initPlayer() {\
-						var ytplayer = new YT.Player("de-ytplayer", { events: {\
-							"onError": gotoNextVideo,\
-							"onReady": function (e) {\
-								' + (post.firstCall ? '' : 'e.target.playVideo();') + '\
-							},\
-							"onStateChange": function (e) {\
-								if (e.data === 0) {\
-									gotoNextVideo();\
-								}\
-							}\
-						}});\
-					}\
-					function gotoNextVideo() {\
-						document.getElementById("de-video-btn-next").click();\
-					}'
-				);
-				post.firstCall = false;
-			}.bind(post);
-			temp = new YouTube();
-			for (i = 0; el = els[i++];) {
-				el = el.cloneNode(true);
-				post.msg.insertAdjacentHTML('beforeend', '<div class="de-entry ' + aib.cReply + '"></div>');
-				post.msg.lastChild.appendChild(el);
-				b = el.classList.contains('de-ytube');
-				el.ytInfo = el.href.match(b ? temp.ytReg : temp.vimReg);
-				if (i === 1) {
-					post.ytLink = el;
-					post.firstCall = true;
-					el.click();
-				} else {
-					el.classList.remove('de-current');
-				}
-			}
-		} else {
-			cont.insertAdjacentHTML('beforeend', '<b>' + Lng.noVideoLinks[lang] + '</b>');
-		}
-	}
 }
 
 function clearFavoriteTable() {
@@ -1873,12 +1753,6 @@ function fixSettings() {
 	toggleBox(Cfg.linksNavig, [
 		'input[info="linksOver"]', 'input[info="linksOut"]', 'input[info="markViewed"]',
 		'input[info="strikeHidd"]', 'input[info="noNavigHidd"]'
-	]);
-	toggleBox(Cfg.addYouTube && Cfg.addYouTube !== 4, [
-		'select[info="YTubeType"]', 'input[info="YTubeHD"]', 'input[info="addVimeo"]'
-	]);
-	toggleBox(Cfg.addYouTube, [
-		'input[info="YTubeWidth"]', 'input[info="YTubeHeigh"]', 'input[info="YTubeTitles"]'
 	]);
 	toggleBox(Cfg.ajaxReply, ['input[info="sendErrNotif"]', 'input[info="scrAfterRep"]']);
 	toggleBox(Cfg.ajaxReply === 2, [
@@ -2143,20 +2017,7 @@ function getCfgLinks() {
 		lBox('crossLinks', true, null),
 		lBox('insertNum', true, null),
 		lBox('addMP3', true, null),
-		lBox('addImgs', true, null),
-		optSel('addYouTube', true, null),
-		$New('div', {'class': 'de-cfg-depend'}, [
-			$New('div', null, [
-				optSel('YTubeType', false, null),
-				inpTxt('YTubeWidth', 4, null),
-				$txt('×'),
-				inpTxt('YTubeHeigh', 4, null),
-				$txt(' '),
-				lBox('YTubeHD', false, null)
-			]),
-			$if(nav.isGM, lBox('YTubeTitles', false, null)),
-			lBox('addVimeo', true, null)
-		])
+		lBox('addImgs', true, null)
 	]);
 }
 
@@ -3693,292 +3554,6 @@ dateTime.prototype = {
 // PLAYER
 // ===========================================================================================================
 
-YouTube = new function () {
-	var instance, vData, embedType, videoType, width, height, isHD, loadTitles;
-
-	function addThumb(el, m, isYtube) {
-		var wh = ' width="' + width + '" height="' + height + '"></a>';
-		if (isYtube) {
-			el.innerHTML = '<a href="' + aib.prot + '//www.youtube.com/watch?v=' + m[1] + '" target="_blank">' +
-				'<img class="de-video-thumb de-ytube" src="https://i.ytimg.com/vi/' + m[1] + '/0.jpg"' + wh;
-		} else {
-			el.innerHTML = '<a href="' + aib.prot + '//vimeo.com/' + m[1] + '" target="_blank">' +
-				'<img class="de-video-thumb de-vimeo" src=""' + wh;
-			GM_xmlhttpRequest({
-				'method': 'GET',
-				'url': aib.prot + '//vimeo.com/api/v2/video/' + m[1] + '.json',
-				'onload': function (xhr){
-					this.setAttribute('src', JSON.parse(xhr.responseText)[0].thumbnail_large);
-				}.bind(el.firstChild.firstChild)
-			});
-		}
-	}
-
-	function addPlayer(el, m, isYtube) {
-		var time, list, id = m[1],
-			wh = ' width="' + width + '" height="' + height + '">';
-		if (isYtube) {
-			time = (m[2] ? m[2] * 3600 : 0) + (m[3] ? m[3] * 60 : 0) + (m[4] ? +m[4] : 0);
-			list = m[0].match(/list=[^&#]+/);
-			el.innerHTML = '<iframe frameborder="0" allowfullscreen="1" src="' + aib.prot + '//www.youtube.com/embed/' +
-				id + '?' + (el.parentNode.id === 'de-content-vid' ? 'enablejsapi=1&' : '') +
-				(isHD ? 'hd=1&' : '') + (list ? list[0] + '&' : '') + 'start=' + time + (videoType === 1 ?
-					'&html5=1&rel=0" type="text/html"' : '" type="application/x-shockwave-flash"') + wh;
-		} else {
-			time = m[2] ? m[2] : '';
-			el.innerHTML = videoType === 1 ?
-				'<iframe src="' + aib.prot + '//player.vimeo.com/video/' + id + time +
-					'" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen' + wh :
-				'<embed type="application/x-shockwave-flash" src="' + aib.prot + '//vimeo.com/moogaloop.swf' +
-					'?clip_id=' + id + time + '&server=vimeo.com&color=00adef&fullscreen=1" ' +
-					'allowscriptaccess="always" allowfullscreen="true"' + wh;
-		}
-	}
-
-	function addLink(post, m, loader, link, isYtube) {
-		var msg, src, time, dataObj;
-		if (!post) {
-			return;
-		}
-		post.hasYTube = true;
-		if (post.ytInfo === null) {
-			if (embedType === 2) {
-				addPlayer(post.ytObj, post.ytInfo = m, isYtube);
-			} else if (embedType > 2) {
-				addThumb(post.ytObj, post.ytInfo = m, isYtube);
-			}
-		} else if (!link && $q('.de-video-link[href*="' + m[1] + '"]', post.msg)) {
-			return;
-		}
-		if (loader && (dataObj = vData[m[1]])) {
-			post.ytData.push(dataObj);
-		}
-		if (m[4] || m[3] || m[2]) {
-			if (m[4] >= 60) {
-				m[3] = (m[3] || 0) + Math.floor(m[4] / 60);
-				m[4] %= 60;
-			}
-			if (m[3] >= 60) {
-				m[2] = (m[2] || 0) + Math.floor(m[3] / 60);
-				m[3] %= 60;
-			}
-			time = (m[2] ? m[2] + 'h' : '') + (m[3] ? m[3] + 'm' : '') + (m[4] ? m[4] + 's' : '');
-		}
-		if (link) {
-			link.href = link.href.replace(/^http:/, 'https:');
-			if (time) {
-				link.setAttribute('de-time', time);
-			}
-			if (dataObj) {
-				link.textContent = dataObj[0];
-				link.className = 'de-video-link de-ytube de-video-title';
-				link.setAttribute('de-author', dataObj[1]);
-				link.title = Lng.author[lang] + dataObj[1] + ', ' +
-					Lng.views[lang] + dataObj[2] + ', ' + Lng.published[lang] + dataObj[3];
-			} else {
-				link.className = 'de-video-link ' + (isYtube ? 'de-ytube' : 'de-vimeo');
-				if (!isYtube && Cfg.YTubeTitles) {
-					getVimeoTitle(link, m);
-				}
-			}
-		} else {
-			src = isYtube ? aib.prot + '//www.youtube.com/watch?v=' + m[1] + (time ? '#t=' + time : '')
-				: aib.prot + '//vimeo.com/' + m[1];
-			post.msg.insertAdjacentHTML('beforeend',
-				'<p class="de-video-ext"><a class="de-video-link ' + (isYtube ? 'de-ytube' : 'de-vimeo') +
-					(dataObj ? ' de-video-title" title="' + Lng.author[lang] + dataObj[1] + ', ' +
-						Lng.views[lang] + dataObj[2] + ', ' + Lng.published[lang] + dataObj[3] +
-						'" de-author="' + dataObj[1] : '') + (time ? '" de-time="' + time : '') +
-					'" href="' + src + '">' + (dataObj ? dataObj[0] : src) + '</a></p>');
-			link = post.msg.lastChild.firstChild;
-		}
-		if (!post.ytInfo || post.ytInfo === m) {
-			post.ytLink = link;
-		}
-		link.ytInfo = m;
-		if (loader && !dataObj) {
-			post.ytLinksLoading++;
-			loader.run([post, link, m[1]]);
-		}
-	}
-
-	function clickLink(post, el, mode) {
-		var m = el.ytInfo;
-		if (post.ytInfo === m) {
-			if (mode === 3) {
-				if ($c('de-video-thumb', post.ytObj)) {
-					el.classList.add('de-current');
-					addPlayer(post.ytObj, post.ytInfo = m, el.classList.contains('de-ytube'));
-				} else {
-					el.classList.remove('de-current');
-					addThumb(post.ytObj, post.ytInfo = m, el.classList.contains('de-ytube'));
-				}
-			} else {
-				el.classList.remove('de-current');
-				post.ytObj.innerHTML = '';
-				post.ytInfo = null;
-			}
-		} else if (mode > 2) {
-			post.ytLink.classList.remove('de-current');
-			post.ytLink = el;
-			addThumb(post.ytObj, post.ytInfo = m, el.classList.contains('de-ytube'));
-		} else {
-			post.ytLink.classList.remove('de-current');
-			post.ytLink = el;
-			el.classList.add('de-current');
-			addPlayer(post.ytObj, post.ytInfo = m, el.classList.contains('de-ytube'));
-		}
-	}
-
-	function getVimeoTitle(link, m) {
-		GM_xmlhttpRequest({
-			'method': 'GET',
-			'url': aib.prot + '//vimeo.com/api/v2/video/' + m[1] + '.json',
-			'onload': function (xhr) {
-				var json = JSON.parse(xhr.responseText)[0],
-					date = new RegExp (/(.*)\s(.*)?/).exec(json["upload_date"]);
-				link.textContent = json["title"];
-				link.title = Lng.author[lang] + json["user_name"] + ', ' +
-					Lng.views[lang] + json["stats_number_of_plays"] + ', ' + Lng.published[lang] + date[1];
-			}
-		});
-	}
-
-	function getYtubeTitleLoader() {
-		var queueEnd, queue = new $queue(4, function (qIdx, num, data) {
-			if (num % 30 === 0) {
-				queue.pause();
-				setTimeout(queue.continue.bind(queue), 3e3);
-			}
-			GM_xmlhttpRequest({
-				'method': 'GET',
-				'url': aib.prot + '//gdata.youtube.com/feeds/api/videos/' + data[2] +
-					'?alt=json&fields=title/text(),author/name,yt:statistics/@viewCount,published',
-				'onreadystatechange': function (idx, xhr) {
-					if (xhr.readyState !== 4) {
-						return;
-					}
-					var entry, title, author, views, publ, data, post = this[0], link = this[1];
-					try {
-						if (xhr.status === 200) {
-							entry = JSON.parse(xhr.responseText).entry;
-							title = entry.title.$t;
-							author = entry.author[0].name.$t;
-							views = entry.yt$statistics.viewCount;
-							publ = entry.published.$t.substr(0, 10);
-						}
-					} finally {
-						if (title) {
-							link.textContent = title;
-							link.setAttribute('de-author', author);
-							link.classList.add('de-video-title');
-							link.title = Lng.author[lang] + author + ', ' + Lng.views[lang] + views + ', ' +
-								Lng.published[lang] + publ;
-							vData[this[2]] = data = [title, author, views, publ];
-							post.ytData.push(data);
-							post.ytLinksLoading--;
-							if (post.ytHideFun !== null) {
-								post.ytHideFun(data);
-							}
-						}
-						setTimeout(queueEnd, 250, idx);
-					}
-				}.bind(data, qIdx)
-			});
-		}, function () {
-			sesStorage['de-ytube-data'] = JSON.stringify(vData);
-			queue = queueEnd = null;
-		});
-		queueEnd = queue.end.bind(queue);
-		return queue;
-	}
-
-	function YouTubeSingleton() {
-		if (instance) {
-			return instance;
-		}
-		instance = this;
-		embedType = Cfg.addYouTube;
-		if (embedType === 0) {
-			this.parseLinks = emptyFn;
-			this.updatePost = emptyFn;
-		}
-		loadTitles = Cfg.YTubeTitles;
-		if (loadTitles) {
-			vData = JSON.parse(sesStorage['de-ytube-data'] || '{}');
-		}
-		videoType = Cfg.YTubeType;
-		width = Cfg.YTubeWidth;
-		height = Cfg.YTubeHeigh;
-		isHD = Cfg.YTubeHD;
-	}
-	YouTubeSingleton.prototype = {
-		embedType: embedType,
-		ytReg: /^https?:\/\/(?:www\.|m\.)?youtu(?:be\.com\/(?:watch\?.*?v=|v\/|embed\/)|\.be\/)([a-zA-Z0-9-_]+).*?(?:t(?:ime)?=(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?)?$/,
-		vimReg: /^https?:\/\/(?:www\.)?vimeo\.com\/(?:[^\?]+\?clip_id=|.*?\/)?(\d+).*?(#t=\d+)?$/,
-		vData: vData,
-
-		addPlayer: addPlayer,
-		addLink: addLink,
-		clickLink: clickLink,
-		parseLinks: function (post) {
-			var i, len, els, el, src, m, embedTube = [],
-				loader = loadTitles && getYtubeTitleLoader();
-			for (i = 0, els = $Q('embed, object, iframe', post ? post.el : dForm), len = els.length; i < len; ++i) {
-				el = els[i];
-				src = el.src || el.data;
-				if (m = src.match(this.ytReg)) {
-					embedTube.push(post || aib.getPostEl(el).post, m, true);
-					$del(el);
-				}
-				if (Cfg.addVimeo && (m = src.match(this.vimReg))) {
-					embedTube.push(post || aib.getPostEl(el).post, m, false);
-					$del(el);
-				}
-			}
-			for (i = 0, els = $Q('a[href*="youtu"]', post ? post.el : dForm), len = els.length; i < len; ++i) {
-				el = els[i];
-				if (m = el.href.match(this.ytReg)) {
-					addLink(post || aib.getPostEl(el).post, m, loader, el, true);
-				}
-			}
-			if (Cfg.addVimeo) {
-				for (i = 0, els = $Q('a[href*="vimeo.com"]', post ? post.el : dForm), len = els.length; i < len; ++i) {
-					el = els[i];
-					if (m = el.href.match(this.vimReg)) {
-						addLink(post || aib.getPostEl(el).post, m, null, el, false);
-					}
-				}
-			}
-			for (i = 0, len = embedTube.length; i < len; i += 3) {
-				addLink(embedTube[i], embedTube[i + 1], loader, null, embedTube[i + 2]);
-			}
-			loader && loader.complete();
-		},
-		updatePost: function (post, oldLinks, newLinks, cloned) {
-			var i, j, el, link, m, loader = !cloned && loadTitles && getYtubeTitleLoader(),
-				len = newLinks.length;
-			for (i = 0, j = 0; i < len; i++) {
-				el = newLinks[i];
-				link = oldLinks[j];
-				if (link && link.classList.contains('de-current')) {
-					post.ytLink = el;
-				}
-				if (cloned) {
-					el.ytInfo = link.ytInfo;
-					j++;
-				} else if (m = el.href.match(this.ytReg)) {
-					addLink(post, m, loader, el, true);
-					j++;
-				}
-			}
-			post.ytLink = post.ytLink || newLinks[0];
-			loader && loader.complete();
-		}
-	};
-
-	return YouTubeSingleton;
-};
 
 function embedMP3Links(post) {
 	var el, link, src, i, els, len;
@@ -5348,38 +4923,6 @@ SpellsInterpreter.prototype = {
 			}
 		}
 		return false;
-	},
-	_vauthor: function (val) {
-		return this._videoVauthor(val, true);
-	},
-	_videoVauthor: function (val, isAuthorSpell) {
-		if (!val) {
-			return !!this._post.hasYTube;
-		}
-		if (!this._post.hasYTube || !Cfg.YTubeTitles) {
-			return false;
-		}
-		var i, data, len;
-		for (i = 0, data = this._post.ytData, len = data.length; i < len; ++i) {
-			if (isAuthorSpell ? val === data[i][1] : val.test(data[i][0])) {
-				return true;
-			}
-		}
-		if (this._post.ytLinksLoading === 0) {
-			return false;
-		}
-		this._post.ytHideFun = this._videoVauthor_helper.bind(this, isAuthorSpell, val);
-		this._asyncWait = true;
-		return false;
-	},
-	_videoVauthor_helper: function (isAuthorSpell, val, data) {
-		if (isAuthorSpell ? val === data[1] : val.test(data[0])) {
-			this._post.ytHideFun = null;
-			this._asyncContinue(true);
-		} else if (this._post.ytLinksLoading === 0) {
-			this._post.ytHideFun = null;
-			this._asyncContinue(false);
-		}
 	}
 }
 
@@ -6005,9 +5548,6 @@ PostForm.prototype = {
 			}
 			if (Cfg.favOnReply && this.tNum) {
 				pByNum[this.tNum].thr.setFavorState(true);
-			}
-			if (this.video && (val = this.video.value) && (val = val.match(new YouTube().ytReg))) {
-				this.video.value = 'http://www.youtube.com/watch?v=' + val[1];
 			}
 			if (this.isQuick) {
 				this.pForm.style.display = 'none';
@@ -7741,7 +7281,6 @@ Post.prototype = {
 	banned: false,
 	deleted: false,
 	hasRef: false,
-	hasYTube: false,
 	hidden: false,
 	hashHideFun: null,
 	hashImgsBusy: 0,
@@ -7757,9 +7296,6 @@ Post.prototype = {
 	sticked: false,
 	userToggled: false,
 	viewed: false,
-	ytHideFun: null,
-	ytInfo: null,
-	ytLinksLoading: 0,
 	addFuncs: function () {
 		updRefMap(this, true);
 		embedMP3Links(this);
@@ -7780,13 +7316,7 @@ Post.prototype = {
 			}
 			switch (el.tagName) {
 			case 'IMG':
-				if (el.classList.contains('de-video-thumb')) {
-					if (Cfg.addYouTube === 3) {
-						this.ytLink.classList.add('de-current');
-						new YouTube().addPlayer(this.ytObj, this.ytInfo, el.classList.contains('de-ytube'));
-						$pd(e);
-					}
-				} else if (Cfg.expandImgs !== 0) {
+				if (Cfg.expandImgs !== 0) {
 					this._clickImage(el, e);
 				}
 				return;
@@ -7798,29 +7328,24 @@ Post.prototype = {
 				}
 				return;
 			case 'A':
-				if (el.classList.contains('de-video-link')) {
-					new YouTube().clickLink(this, el, Cfg.addYouTube);
-					$pd(e);
-				} else {
-					temp = el.parentNode;
-					if (temp === this.trunc) {
-						this._getFull(temp, false);
-						$pd(e);
-						e.stopPropagation();
-					} else if (Cfg.insertNum && pr.form && temp === this._pref &&
-						!/Reply|Ответ/.test(el.textContent))
-					{
-						$pd(e);
-						e.stopPropagation();
-						if (pr.isQuick || (TNum && pr.isHidden)) {
-							pr.showQuickReply(this, this.num, false, true);
-						} else if (TNum) {
-							$txtInsert(pr.txta, '>>' + this.num);
-						} else {
-							window.location = el.href.replace(/#i/, '#');
-						}
-					}
-				}
+                                temp = el.parentNode;
+                                if (temp === this.trunc) {
+                                        this._getFull(temp, false);
+                                        $pd(e);
+                                        e.stopPropagation();
+                                } else if (Cfg.insertNum && pr.form && temp === this._pref &&
+                                        !/Reply|Ответ/.test(el.textContent))
+                                {
+                                        $pd(e);
+                                        e.stopPropagation();
+                                        if (pr.isQuick || (TNum && pr.isHidden)) {
+                                                pr.showQuickReply(this, this.num, false, true);
+                                        } else if (TNum) {
+                                                $txtInsert(pr.txta, '>>' + this.num);
+                                        } else {
+                                                window.location = el.href.replace(/#i/, '#');
+                                        }
+                                }
 				return;
 			}
 			switch (el.className) {
@@ -8268,9 +7793,7 @@ Post.prototype = {
 		}
 	},
 	updateMsg: function (newMsg) {
-		var origMsg = aib.dobr ? this.msg.firstElementChild : this.msg,
-			ytExt = $c('de-video-ext', origMsg),
-			ytLinks = $Q(':not(.de-video-ext) > .de-video-link', origMsg);
+		var origMsg = aib.dobr ? this.msg.firstElementChild : this.msg;
 		origMsg.parentNode.replaceChild(newMsg, origMsg);
 		Object.defineProperties(this, {
 			'msg': { configurable: true, value: newMsg },
@@ -8278,10 +7801,6 @@ Post.prototype = {
 		});
 		delete this.html;
 		delete this.text;
-		new YouTube().updatePost(this, ytLinks, $Q('a[href*="youtu"]', newMsg), false);
-		if (ytExt) {
-			newMsg.appendChild(ytExt);
-		}
 		this.addFuncs();
 		spells.check(this);
 		closeAlert($id('de-alert-load-fullmsg'));
@@ -8291,17 +7810,6 @@ Post.prototype = {
 		Object.defineProperty(this, 'wrap', { value: val });
 		return val;
 	},
-	get ytData() {
-		var val = [];
-		Object.defineProperty(this, 'ytData', { value: val });
-		return val;
-	},
-	get ytObj() {
-		var val = aib.insertYtPlayer(this.msg, '<div class="de-video-obj"></div>');
-		Object.defineProperty(this, 'ytObj', { value: val });
-		return val;
-	},
-
 	_hasEvents: false,
 	_linkDelay: 0,
 	_menu: null,
@@ -8715,13 +8223,6 @@ Pview.prototype = Object.create(Post.prototype, {
 			$each($Q(aib.qThumbImages, el), function (el) {
 				el.parentNode.style.display = '';
 			});
-			if (post.hasYTube) {
-				if (post.ytInfo !== null) {
-					Object.defineProperty(this, 'ytObj', { value: $c('de-video-obj', el) });
-					this.ytInfo = post.ytInfo;
-				}
-				new YouTube().updatePost(this, $C('de-video-link', post.el), $C('de-video-link', el), true);
-			}
 			if (Cfg.addImgs) {
 				$each($C('de-img-pre', el), function (el) {
 					el.style.display = '';
@@ -8741,7 +8242,6 @@ Pview.prototype = Object.create(Post.prototype, {
 		} else {
 			this._pref.insertAdjacentHTML('afterend', '<span class="de-post-btns">' + pText + '</span');
 			embedMP3Links(this);
-			new YouTube().parseLinks(this);
 			if (Cfg.addImgs) {
 				embedImagesLinks(el);
 			}
@@ -9236,7 +8736,6 @@ Thread.prototype = {
 		pByNum[num] = post = new Post(el, this, num, i, false, prev);
 		Object.defineProperty(post, 'wrap', { value: wrap });
 		parent.appendChild(wrap);
-		new YouTube().parseLinks(post);
 		if (Cfg.imgSrcBtns) {
 			addImagesSearch(el);
 		}
@@ -9762,13 +9261,6 @@ function getImageBoard(checkDomains, checkOther) {
 			getTNum: { value: function (op) {
 				return $q('input[type="checkbox"]', op).name.match(/\d+/)[0];
 			} },
-			insertYtPlayer: { value: function (msg, playerHtml) {
-				var pMsg = msg.parentNode,
-					prev = pMsg.previousElementSibling,
-					node = prev.hasAttribute('style') ? prev : pMsg;
-				node.insertAdjacentHTML('beforebegin', playerHtml);
-				return node.previousSibling;
-			} },
 			css: { value: 'img[id^="translate_button"], img[src$="button-expand.gif"], img[src$="button-close.gif"], body > center > hr, form > div:first-of-type > hr, h2, .sage { display: none !important; }\
 					div[id^="Wz"] { z-index: 10000 !important; }\
 					.de-thr-hid { margin-bottom: ' + (!TNum ? '7' : '2') + 'px; float: none !important; }\
@@ -10242,10 +9734,6 @@ function getImageBoard(checkDomains, checkOther) {
 				}});
 			}
 			return this.getWrap(el, isOp);
-		},
-		insertYtPlayer: function (msg, playerHtml) {
-			msg.insertAdjacentHTML('beforebegin', playerHtml);
-			return msg.previousSibling;
 		},
 		anchor: '#',
 		css: '',
@@ -11128,8 +10616,6 @@ function scriptCSS() {
 	x += gif ('#de-btn-quote:empty', p + 'L3IKpq4YAYxRUSKguvRzkDkZfWFlicDCqmgYhuGjVO74zlnQlnL98uwqiHr5ODbDxHSE7Y490wxF90eUkepoysRxrMVaUJBzClaEAADs=');
 
 	// Embedders
-	x += cont('.de-video-link.de-ytube', 'https://youtube.com/favicon.ico');
-	x += cont('.de-video-link.de-vimeo', 'https://vimeo.com/favicon.ico');
 	x += cont('.de-img-arch', 'data:image/gif;base64,R0lGODlhEAAQALMAAF82SsxdwQMEP6+zzRA872NmZQesBylPHYBBHP///wAAAAAAAAAAAAAAAAAAAAAAACH5BAEAAAkALAAAAAAQABAAQARTMMlJaxqjiL2L51sGjCOCkGiBGWyLtC0KmPIoqUOg78i+ZwOCUOgpDIW3g3KJWC4t0ElBRqtdMr6AKRsA1qYy3JGgMR4xGpAAoRYkVDDWKx6NRgAAOw==');
 	x += cont('.de-img-audio', 'data:image/gif;base64,R0lGODlhEAAQAKIAAGya4wFLukKG4oq3802i7Bqy9P///wAAACH5BAEAAAYALAAAAAAQABAAQANBaLrcHsMN4QQYhE01OoCcQIyOYQGooKpV1GwNuAwAa9RkqTPpWqGj0YTSELg0RIYM+TjOkgba0sOaAEbGBW7HTQAAOw==');
 	x += '.de-current:after { content: " \u25C6"; }\
@@ -11239,7 +10725,7 @@ function applyCSS(x) {
 }
 
 function updateCSS() {
-	var x = '#de-video-list { padding: 0 0 4px; max-width: ' + (+Cfg.YTubeWidth + 40) + 'px; max-height: ' + (window.innerHeight - +Cfg.YTubeHeigh - 100) + 'px; overflow: auto; }';
+	var x = '';
 	if (Cfg.attachPanel) {
 		x += '.de-content { position: fixed; right: 0; bottom: 25px; z-index: 9999; max-height: 92%; overflow-x: visible; overflow-y: auto; }\
 		#de-content-fav, #de-content-hid { overflow-y: scroll; }\
@@ -11282,11 +10768,6 @@ function updateCSS() {
 	if (Cfg.noBoardRule) {
 		x += (aib.futa ? '.chui' : '.rules, #rules, #rules_row') + ' { display: none; }';
 	}
-	if (aib.abu) {
-		if (Cfg.addYouTube) {
-			x += 'div[id^="post_video"] { display: none !important; }';
-		}
-	}
 	$id('de-css-dynamic').textContent = x;
 	$id('de-css-user').textContent = Cfg.userCSS ? Cfg.userCSSTxt : '';
 }
@@ -11300,8 +10781,6 @@ function addDelformStuff(isLog) {
 	isLog && new Logger().log('Preload images');
 	embedMP3Links(null);
 	isLog && new Logger().log('MP3 links');
-	new YouTube().parseLinks(null);
-	isLog && new Logger().log('YouTube links');
 	if (Cfg.addImgs) {
 		embedImagesLinks(dForm);
 		isLog && new Logger().log('Image links');
